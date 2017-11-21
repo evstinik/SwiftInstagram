@@ -119,6 +119,12 @@ public class Instagram {
     public var isAuthenticated: Bool {
         return retrieveAccessToken() != nil
     }
+    
+    /// Returns current access token.
+    
+    public var accessToken: String? {
+        return retrieveAccessToken()
+    }
 
     // MARK: - Access Token
 
