@@ -66,7 +66,7 @@ public class Instagram {
     /// - parameter success: The callback called after a correct login.
     /// - parameter failure: The callback called after an incorrect login.
 
-    public func login(from controller: UINavigationController,
+    public func login(from controller: UIViewController,
                       withScopes scopes: [InstagramScope] = [.basic],
                       success: EmptySuccessHandler?,
                       failure: FailureHandler?) {
@@ -75,17 +75,20 @@ public class Instagram {
             return
         }
 
-        let vc = InstagramLoginViewController(authURL: authURL, success: { accessToken in
+        let vc = InstagramLoginViewController(authURL: authURL, success: { accessToken, sender in
             guard self.storeAccessToken(accessToken) else {
+                sender.dismiss(animated: true, completion: nil)
                 failure?(InstagramError(kind: .keychainError(code: self.keychain.lastResultCode), message: "Error storing access token into keychain."))
                 return
             }
-
-            controller.popViewController(animated: true)
+            sender.dismiss(animated: true, completion: nil)
             success?()
-        }, failure: failure)
-
-        controller.show(vc, sender: nil)
+        }, failure: { error, sender in
+            sender.dismiss(animated: true, completion: nil)
+            failure?(error)
+        })
+        
+        controller.present(vc, animated: true, completion: nil)
     }
 
     private func buildAuthURL(scopes: [InstagramScope]) -> URL? {

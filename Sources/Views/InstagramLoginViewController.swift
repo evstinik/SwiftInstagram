@@ -13,17 +13,14 @@ class InstagramLoginViewController: UIViewController {
 
     // MARK: - Types
 
-    typealias SuccessHandler = (_ accesToken: String) -> Void
-    typealias FailureHandler = (_ error: InstagramError) -> Void
+    typealias SuccessHandler = (_ accesToken: String, _ sender: UIViewController) -> Void
+    typealias FailureHandler = (_ error: InstagramError, _ sender: UIViewController) -> Void
 
     // MARK: - Properties
 
     private var authURL: URL
     private var success: SuccessHandler?
     private var failure: FailureHandler?
-
-    private var progressView: UIProgressView!
-    private var webViewObservation: NSKeyValueObservation!
 
     // MARK: - Initializers
 
@@ -48,9 +45,6 @@ class InstagramLoginViewController: UIViewController {
             navigationItem.largeTitleDisplayMode = .never
         }
 
-        // Initializes progress view
-        setupProgressView()
-
         // Initializes web view
         let webView = setupWebView()
 
@@ -58,29 +52,7 @@ class InstagramLoginViewController: UIViewController {
         webView.load(URLRequest(url: authURL, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData))
     }
 
-    deinit {
-        progressView.removeFromSuperview()
-        webViewObservation.invalidate()
-    }
-
     // MARK: -
-
-    private func setupProgressView() {
-        let navBar = navigationController!.navigationBar
-
-        progressView = UIProgressView(progressViewStyle: .bar)
-        progressView.progress = 0.0
-        progressView.tintColor = UIColor(red: 0.88, green: 0.19, blue: 0.42, alpha: 1.0)
-        progressView.translatesAutoresizingMaskIntoConstraints = false
-
-        navBar.addSubview(progressView)
-
-        let bottomConstraint = navBar.bottomAnchor.constraint(equalTo: progressView.bottomAnchor, constant: 1)
-        let leftConstraint = navBar.leadingAnchor.constraint(equalTo: progressView.leadingAnchor)
-        let rightConstraint = navBar.trailingAnchor.constraint(equalTo: progressView.trailingAnchor)
-
-        NSLayoutConstraint.activate([bottomConstraint, leftConstraint, rightConstraint])
-    }
 
     private func setupWebView() -> WKWebView {
         let webConfiguration = WKWebViewConfiguration()
@@ -90,24 +62,9 @@ class InstagramLoginViewController: UIViewController {
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         webView.navigationDelegate = self
 
-        webViewObservation = webView.observe(\.estimatedProgress, changeHandler: progressViewChangeHandler)
-
         view.addSubview(webView)
 
         return webView
-    }
-
-    private func progressViewChangeHandler<Value>(webView: WKWebView, change: NSKeyValueObservedChange<Value>) {
-        progressView.alpha = 1.0
-        progressView.setProgress(Float(webView.estimatedProgress), animated: true)
-
-        if webView.estimatedProgress >= 1.0 {
-            UIView.animate(withDuration: 0.3, delay: 0.1, options: .curveEaseInOut, animations: {
-                self.progressView.alpha = 0.0
-            }, completion: { (_ finished) in
-                self.progressView.progress = 0
-            })
-        }
     }
 
 }
@@ -133,7 +90,7 @@ extension InstagramLoginViewController: WKNavigationDelegate {
         decisionHandler(.cancel)
 
         DispatchQueue.main.async {
-            self.success?(String(urlString[range.upperBound...]))
+            self.success?(String(urlString[range.upperBound...]), self)
         }
     }
 
@@ -149,7 +106,7 @@ extension InstagramLoginViewController: WKNavigationDelegate {
         case 400:
             decisionHandler(.cancel)
             DispatchQueue.main.async {
-                self.failure?(InstagramError(kind: .invalidRequest, message: "Invalid request"))
+                self.failure?(InstagramError(kind: .invalidRequest, message: "Invalid request"), self)
             }
         default:
             decisionHandler(.allow)
