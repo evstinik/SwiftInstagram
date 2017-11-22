@@ -75,22 +75,27 @@ public class Instagram {
             return
         }
         
-        if let vc = InstagramLoginViewController.instanceFromView {
-            vc.configure(authURL: authURL,
-                         success: { accessToken, sender in
-                            guard self.storeAccessToken(accessToken) else {
-                                sender.dismiss(animated: true, completion: nil)
-                                failure?(InstagramError(kind: .keychainError(code: self.keychain.lastResultCode), message: "Error storing access token into keychain."))
-                                return
-                            }
-                            sender.dismiss(animated: true, completion: nil)
-                            success?()
-            }, failure: { error, sender in
-                sender.dismiss(animated: true, completion: nil)
-                failure?(error)
-            })
+        if let navController = InstagramLoginViewController.instanceFromView {
             
-            controller.present(vc, animated: true, completion: nil)
+            for child in navController.childViewControllers {
+                if let vc = child as? InstagramLoginViewController {
+                    vc.configure(authURL: authURL,
+                                 success: { accessToken, sender in
+                                    guard self.storeAccessToken(accessToken) else {
+                                        sender.dismiss(animated: true, completion: nil)
+                                        failure?(InstagramError(kind: .keychainError(code: self.keychain.lastResultCode), message: "Error storing access token into keychain."))
+                                        return
+                                    }
+                                    sender.dismiss(animated: true, completion: nil)
+                                    success?()
+                    }, failure: { error, sender in
+                        sender.dismiss(animated: true, completion: nil)
+                        failure?(error)
+                    })
+                }
+            }
+            
+            controller.present(navController, animated: true, completion: nil)
         }
     }
 

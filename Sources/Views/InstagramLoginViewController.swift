@@ -24,10 +24,10 @@ class InstagramLoginViewController: UIViewController {
 
     // MARK: - Initializers
     
-    static var instanceFromView: InstagramLoginViewController? {
+    static var instanceFromView: UIViewController? {
         let bundle = Bundle(for: self)
         let storyboard = UIStoryboard(name: "Instagram", bundle: bundle)
-        return storyboard.instantiateInitialViewController() as? InstagramLoginViewController
+        return storyboard.instantiateInitialViewController()
     }
     
     func configure(authURL: URL, success: SuccessHandler?, failure: FailureHandler?) {
@@ -37,7 +37,6 @@ class InstagramLoginViewController: UIViewController {
     }
     
     @IBOutlet private weak var webView: UIWebView!
-    @IBOutlet weak var customNavigationItem: UINavigationItem!
     
     // MARK: - View Lifecycle
 
@@ -48,7 +47,7 @@ class InstagramLoginViewController: UIViewController {
             navigationItem.largeTitleDisplayMode = .never
         }
         
-        self.customNavigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel,
+        navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel,
                                                                       target: self,
                                                                       action: #selector(doneClicked(_:)))
 
@@ -81,8 +80,7 @@ extension InstagramLoginViewController: UIWebViewDelegate {
     
     func webViewDidFinishLoad(_ webView: UIWebView) {
         let title = webView.stringByEvaluatingJavaScript(from: "document.title")
-        customNavigationItem.title = title
-    
+        navigationItem.title = title
     }
     
     func webView(_ webView: UIWebView, shouldStartLoadWith request: URLRequest, navigationType: UIWebViewNavigationType) -> Bool {
