@@ -20,6 +20,7 @@ Pod::Spec.new do |s|
  s.subspec 'Core' do |ss|
      ss.framework       = 'Foundation'
      ss.source_files    = 'Sources/*.swift', 'Sources/**/*.swift'
+     s.resources    = 'Sources/**/*.storyboard'
  end
 
 end

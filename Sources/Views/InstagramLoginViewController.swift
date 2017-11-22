@@ -18,24 +18,27 @@ class InstagramLoginViewController: UIViewController {
 
     // MARK: - Properties
 
-    private var authURL: URL
+    private var authURL: URL?
     private var success: SuccessHandler?
     private var failure: FailureHandler?
 
     // MARK: - Initializers
-
-    required init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+    
+    static var instanceFromView: InstagramLoginViewController? {
+        let bundle = Bundle(for: self)
+        let storyboard = UIStoryboard(name: "Instagram", bundle: bundle)
+        return storyboard.instantiateInitialViewController() as? InstagramLoginViewController
     }
-
-    init(authURL: URL, success: SuccessHandler?, failure: FailureHandler?) {
+    
+    func configure(authURL: URL, success: SuccessHandler?, failure: FailureHandler?) {
         self.authURL = authURL
         self.success = success
         self.failure = failure
-
-        super.init(nibName: nil, bundle: nil)
     }
-
+    
+    @IBOutlet private weak var webView: UIWebView!
+    @IBOutlet weak var customNavigationItem: UINavigationItem!
+    
     // MARK: - View Lifecycle
 
     override func viewDidLoad() {
@@ -44,73 +47,55 @@ class InstagramLoginViewController: UIViewController {
         if #available(iOS 11.0, *) {
             navigationItem.largeTitleDisplayMode = .never
         }
-
-        // Initializes web view
-        let webView = setupWebView()
+        
+        self.customNavigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel,
+                                                                      target: self,
+                                                                      action: #selector(doneClicked(_:)))
 
         // Starts authorization
-        webView.load(URLRequest(url: authURL, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData))
+        if let url = authURL {
+            webView.loadRequest(URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData))
+        }
     }
-
-    // MARK: -
-
-    private func setupWebView() -> WKWebView {
-        let webConfiguration = WKWebViewConfiguration()
-        webConfiguration.websiteDataStore = .nonPersistent()
-
-        let webView = WKWebView(frame: view.frame, configuration: webConfiguration)
-        webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        webView.navigationDelegate = self
-
-        view.addSubview(webView)
-
-        return webView
+    
+    @objc private func doneClicked(_ sender: Any) {
+        self.dismiss(animated: true, completion: nil)
+        self.failure?(InstagramError(kind: .invalidRequest, message: "Canceled"), self)
+    }
+    
+    private func clearCookies() {
+        if let cookies = HTTPCookieStorage.shared.cookies {
+            for cookie in cookies {
+                if cookie.domain.range(of: "instagram") != nil {
+                    HTTPCookieStorage.shared.deleteCookie(cookie)
+                }
+            }
+        }
     }
 
 }
 
 // MARK: - WKNavigationDelegate
 
-extension InstagramLoginViewController: WKNavigationDelegate {
-
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        navigationItem.title = webView.title
+extension InstagramLoginViewController: UIWebViewDelegate {
+    
+    func webViewDidFinishLoad(_ webView: UIWebView) {
+        let title = webView.stringByEvaluatingJavaScript(from: "document.title")
+        customNavigationItem.title = title
+    
     }
-
-    func webView(_ webView: WKWebView,
-                 decidePolicyFor navigationAction: WKNavigationAction,
-                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-        let urlString = navigationAction.request.url!.absoluteString
-
-        guard let range = urlString.range(of: "#access_token=") else {
-            decisionHandler(.allow)
-            return
-        }
-
-        decisionHandler(.cancel)
-
+    
+    func webView(_ webView: UIWebView, shouldStartLoadWith request: URLRequest, navigationType: UIWebViewNavigationType) -> Bool {
+        
+        guard let urlString = request.url?.absoluteString,
+            let range = urlString.range(of: "#access_token=")  else { return true }
+        
         DispatchQueue.main.async {
+            self.clearCookies()
             self.success?(String(urlString[range.upperBound...]), self)
         }
-    }
-
-    func webView(_ webView: WKWebView,
-                 decidePolicyFor navigationResponse: WKNavigationResponse,
-                 decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
-        guard let httpResponse = navigationResponse.response as? HTTPURLResponse else {
-            decisionHandler(.allow)
-            return
-        }
-
-        switch httpResponse.statusCode {
-        case 400:
-            decisionHandler(.cancel)
-            DispatchQueue.main.async {
-                self.failure?(InstagramError(kind: .invalidRequest, message: "Invalid request"), self)
-            }
-        default:
-            decisionHandler(.allow)
-        }
+        
+        return true
     }
 
 }
