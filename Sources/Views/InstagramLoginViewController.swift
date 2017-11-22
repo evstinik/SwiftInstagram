@@ -38,6 +38,19 @@ class InstagramLoginViewController: UIViewController {
     
     @IBOutlet private weak var webView: UIWebView!
     
+    fileprivate var stopButton: UIBarButtonItem {
+        return UIBarButtonItem(barButtonSystemItem: .stop,
+                        target: self,
+                        action: #selector(stopAction(_:)))
+    }
+    
+    fileprivate var refreshButton: UIBarButtonItem {
+        return UIBarButtonItem(barButtonSystemItem: .refresh,
+                        target: self,
+                        action: #selector(refreshAction(_:)))
+    }
+    
+    
     // MARK: - View Lifecycle
 
     override func viewDidLoad() {
@@ -71,6 +84,15 @@ class InstagramLoginViewController: UIViewController {
             }
         }
     }
+    
+    @objc private func refreshAction(_ sender: Any) {
+        webView.reload()
+    }
+    
+    @objc private func stopAction(_ sender: Any) {
+        webView.stopLoading()
+        webViewDidFinishLoad(webView)
+    }
 
 }
 
@@ -81,6 +103,12 @@ extension InstagramLoginViewController: UIWebViewDelegate {
     func webViewDidFinishLoad(_ webView: UIWebView) {
         let title = webView.stringByEvaluatingJavaScript(from: "document.title")
         navigationItem.title = title
+        
+        self.navigationItem.setRightBarButton(refreshButton, animated: true)
+    }
+    
+    func webViewDidStartLoad(_ webView: UIWebView) {
+        self.navigationItem.setRightBarButton(stopButton, animated: true)
     }
     
     func webView(_ webView: UIWebView, shouldStartLoadWith request: URLRequest, navigationType: UIWebViewNavigationType) -> Bool {
