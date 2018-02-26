@@ -12,8 +12,8 @@ public struct InstagramError: Error {
 
     // MARK: - Properties
 
-    let kind: ErrorKind
-    let message: String
+    public let kind: ErrorKind
+    public let message: String
 
     /// Retrieve the localized description for this error.
     public var localizedDescription: String {
@@ -22,13 +22,14 @@ public struct InstagramError: Error {
 
     // MARK: - Types
 
-    enum ErrorKind: CustomStringConvertible {
+    public enum ErrorKind: CustomStringConvertible {
         case invalidRequest
         case jsonParseError
         case keychainError(code: OSStatus)
         case missingClient
+        case canceled
 
-        var description: String {
+        public var description: String {
             switch self {
             case .invalidRequest:
                 return "invalidRequest"
@@ -38,6 +39,8 @@ public struct InstagramError: Error {
                 return "keychainError(code: \(code)"
             case .missingClient:
                 return "missingClient"
+            case .canceled:
+                return "canceled"
             }
         }
     }

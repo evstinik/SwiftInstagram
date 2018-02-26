@@ -72,7 +72,7 @@ class InstagramLoginViewController: UIViewController {
     
     @objc private func doneClicked(_ sender: Any) {
         self.dismiss(animated: true, completion: nil)
-        self.failure?(InstagramError(kind: .invalidRequest, message: "Canceled"), self)
+        self.failure?(InstagramError(kind: .canceled, message: "Canceled"), self)
     }
     
     private func clearCookies() {
